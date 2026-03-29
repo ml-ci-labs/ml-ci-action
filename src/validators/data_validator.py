@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 
 
 @dataclass
@@ -158,7 +159,7 @@ def _check_schema(
 
 def _is_numeric(dtype: np.dtype) -> bool:
     """Check if a dtype is numeric."""
-    return np.issubdtype(dtype, np.number)
+    return bool(is_numeric_dtype(dtype))
 
 
 def _check_missing_values(df: pd.DataFrame) -> dict[str, float]:

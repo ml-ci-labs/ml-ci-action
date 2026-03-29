@@ -15,12 +15,22 @@ import sys
 def get_input(name: str, required: bool = False, default: str = "") -> str:
     """Read a GitHub Action input from environment.
 
-    GitHub normalizes input names to INPUT_<NAME> with uppercase letters and
-    hyphens/spaces converted to underscores.
+    Docker actions in GitHub can surface inputs with hyphenated names, while
+    local shells generally require underscores. Support both forms.
     """
     normalized = name.upper().replace("-", "_").replace(" ", "_")
-    env_name = f"INPUT_{normalized}"
-    value = os.environ.get(env_name, default).strip()
+    candidates = [
+        f"INPUT_{name.upper()}",
+        f"INPUT_{normalized}",
+    ]
+
+    value = default
+    for env_name in candidates:
+        if env_name in os.environ:
+            value = os.environ[env_name]
+            break
+
+    value = value.strip()
     if required and not value:
         print(f"::error::Required input '{name}' is not set")
         sys.exit(1)

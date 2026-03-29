@@ -78,6 +78,13 @@ def test_data_validation_failure_sets_outputs_before_exit(tmp_path: Path, monkey
     assert '"validation_passed": false' in outputs["report-json"]
 
 
+def test_get_input_accepts_hyphenated_docker_action_env_names(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("INPUT_METRICS-FILE", "metrics.json")
+    monkeypatch.delenv("INPUT_METRICS_FILE", raising=False)
+
+    assert main_module.get_input("METRICS-FILE") == "metrics.json"
+
+
 def test_model_card_generation_failure_degrades_gracefully(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
