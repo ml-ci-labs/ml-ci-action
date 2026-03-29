@@ -4,6 +4,8 @@ ML CI/CD without platform lock-in. `ml-ci-action` compares model metrics against
 
 It is designed for teams that want ML-aware CI on GitHub without adopting a hosted experiment platform first.
 
+![ML-CI PR report](./docs/assets/pr-report.svg)
+
 ## What v0.1 Covers
 
 - Threshold-based model regression detection
@@ -21,6 +23,8 @@ It is designed for teams that want ML-aware CI on GitHub without adopting a host
 
 ## Quick Start
 
+This first example is intentionally baseline-free so it works on the first PR in any repo.
+
 ```yaml
 name: ML Validation
 
@@ -37,6 +41,17 @@ jobs:
         run: python train.py --save-metrics metrics.json
 
       - name: Validate model changes
+        uses: ml-ci/ml-ci-action@v0.1.0
+        with:
+          metrics-file: metrics.json
+          comment-on-pr: "true"
+          github-token: ${{ github.token }}
+```
+
+Once the same metrics file exists on `main` or `master`, enable branch comparison:
+
+```yaml
+      - name: Validate against the default branch baseline
         uses: ml-ci/ml-ci-action@v0.1.0
         with:
           metrics-file: metrics.json
@@ -155,6 +170,12 @@ CSV and Parquet are supported in v0.1.
 
 When `model-card: "true"` is enabled, ML-CI writes `MODEL_CARD.md` using the current metrics payload plus optional comparison data.
 
+## Launch-Grade Behavior Notes
+
+- Remote baseline fetches that hit GitHub permission or Contents API size limits fall back to current-only mode with a targeted warning telling users to use a local file path for `baseline-metrics`.
+- Example workflows under [`examples/`](./examples) are documentation assets; they are not executed automatically by this repository's CI.
+- The repository's PR self-test workflow exercises current-only mode, remote `main` fetch fallback, local baseline comparison, expected regression failure, expected data-quality failure, and live PR comment posting.
+
 ## Positioning
 
 ML-CI is intentionally standalone:
@@ -177,6 +198,18 @@ If you already use a platform like ClearML, W&B, or MLflow, ML-CI is best though
 
 - [PyTorch classification](./examples/pytorch-classification/.github/workflows/ml-ci.yml)
 - [scikit-learn regression](./examples/sklearn-regression/.github/workflows/ml-ci.yml)
+
+## Release Checklist
+
+- `pytest -q`
+- `docker build -t ml-ci-action .`
+- container smoke test with fixture metrics
+- GitHub PR self-test workflow green
+- one launch asset is current
+- Marketplace metadata reviewed
+- manual rerun check confirms the PR comment updates in place instead of duplicating
+
+See [docs/release-checklist.md](./docs/release-checklist.md) and [docs/launch-copy.md](./docs/launch-copy.md) for launch-day materials.
 
 ## Development
 
