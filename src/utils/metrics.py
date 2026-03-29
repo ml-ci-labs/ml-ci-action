@@ -9,6 +9,10 @@ from typing import Any
 
 import requests
 
+class BaselineFetchError(RuntimeError):
+    """Raised when a remote baseline cannot be fetched with actionable context."""
+
+
 # Default metric direction: True = higher is better, False = lower is better
 HIGHER_IS_BETTER_DEFAULTS: dict[str, bool] = {
     "accuracy": True,
@@ -135,6 +139,7 @@ def load_metrics_from_github(
     Raises:
         FileNotFoundError: If the file does not exist at the given ref.
         ValueError: If the response cannot be parsed.
+        BaselineFetchError: If GitHub rejects the fetch for permissions or size reasons.
         requests.HTTPError: On other API errors.
     """
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
@@ -150,6 +155,18 @@ def load_metrics_from_github(
         raise FileNotFoundError(
             f"Metrics file '{path}' not found in {repo} at ref '{ref}'. "
             "This may be the first PR adding metrics — skipping baseline comparison."
+        )
+
+    if resp.status_code == 403:
+        try:
+            message = resp.json().get("message", "")
+        except ValueError:
+            message = ""
+        raise BaselineFetchError(
+            f"GitHub rejected the baseline fetch for '{path}' at ref '{ref}' in {repo}. "
+            "This is commonly caused by repository permissions or the GitHub Contents API size limit. "
+            "Use a local file path for 'baseline-metrics' instead of fetching from the branch. "
+            f"GitHub response: {message or '403 Forbidden'}"
         )
 
     resp.raise_for_status()

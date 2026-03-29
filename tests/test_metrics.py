@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from src.utils.metrics import (
+    BaselineFetchError,
     MetricsData,
     _is_higher_better,
     compare_metrics,
@@ -73,6 +74,21 @@ class TestLoadMetricsFromGithub:
         mock_get.return_value = response
 
         with pytest.raises(FileNotFoundError, match="not found"):
+            load_metrics_from_github(
+                repo="owner/repo",
+                path="metrics.json",
+                ref="main",
+                token="token123",
+            )
+
+    @patch("src.utils.metrics.requests.get")
+    def test_permission_or_size_failure_raises_actionable_error(self, mock_get):
+        response = MagicMock()
+        response.status_code = 403
+        response.json.return_value = {"message": "This API returns blobs up to 1 MB"}
+        mock_get.return_value = response
+
+        with pytest.raises(BaselineFetchError, match="Use a local file path"):
             load_metrics_from_github(
                 repo="owner/repo",
                 path="metrics.json",

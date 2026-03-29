@@ -21,6 +21,20 @@ jobs:
           fail-on-regression: "true"
           github-token: ${{ github.token }}
 
+  remote-main-baseline-fallback-pass:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run ML-CI with a remote main baseline fetch
+        uses: ./
+        with:
+          metrics-file: tests/fixtures/current_metrics.json
+          baseline-metrics: main
+          comment-on-pr: "false"
+          fail-on-regression: "true"
+          github-token: ${{ github.token }}
+
   pr-comment-pass:
     runs-on: ubuntu-latest
     steps:

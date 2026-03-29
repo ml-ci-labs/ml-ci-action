@@ -161,3 +161,32 @@ def test_missing_remote_baseline_gracefully_falls_back_to_current_only(
     assert outputs["validation-passed"] == "true"
     assert outputs["regression-detected"] == "false"
     assert '"current_metrics"' in outputs["report-json"]
+
+
+def test_permission_denied_remote_baseline_gracefully_falls_back_to_current_only(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    metrics_path = tmp_path / "metrics.json"
+    _write_metrics_file(metrics_path)
+
+    output_path = tmp_path / "github_output.txt"
+    _set_common_env(monkeypatch, tmp_path, output_path)
+    monkeypatch.setenv("INPUT_METRICS_FILE", "metrics.json")
+    monkeypatch.setenv("INPUT_BASELINE_METRICS", "main")
+    monkeypatch.setenv("INPUT_COMMENT_ON_PR", "false")
+    monkeypatch.setenv("INPUT_GITHUB_TOKEN", "token123")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+
+    import src.utils.metrics as metrics_module
+
+    def _raise_forbidden(*_args, **_kwargs):
+        raise metrics_module.BaselineFetchError("Use a local file path for 'baseline-metrics'")
+
+    monkeypatch.setattr(metrics_module, "load_metrics_from_github", _raise_forbidden)
+
+    main_module.main()
+
+    outputs = _parse_outputs(output_path)
+    assert outputs["validation-passed"] == "true"
+    assert outputs["regression-detected"] == "false"

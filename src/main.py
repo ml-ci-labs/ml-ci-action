@@ -102,6 +102,7 @@ def main() -> None:
         post_or_update_comment,
     )
     from src.utils.metrics import (
+        BaselineFetchError,
         MetricsData,
         load_metrics,
         load_metrics_from_github,
@@ -152,6 +153,12 @@ def main() -> None:
                 except FileNotFoundError as e:
                     print(f"::warning::{e}")
                     print("::notice::Proceeding without baseline comparison")
+                except BaselineFetchError as e:
+                    print(f"::warning::{e}")
+                    print(
+                        "::notice::Proceeding without baseline comparison. "
+                        "Prefer a local file path for 'baseline-metrics' when remote fetches are blocked."
+                    )
                 except Exception as e:
                     print(f"::warning::Failed to fetch baseline: {e}")
                     print("::notice::Proceeding without baseline comparison")
